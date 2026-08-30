@@ -81,6 +81,14 @@ jobs:
         working-directory: .quartz-engine
         run: npx quartz build
 
+      - name: Fix published creature image paths
+        working-directory: .quartz-engine
+        run: |
+          find public/02-creatures/characters \
+            -type f -name '*.html' \
+            -exec sed -i -E \
+              's!src="\.\./\.\./\.\./(e[1-3]_(front|back)\.svg)"!src="./\1"!g' {} +
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
