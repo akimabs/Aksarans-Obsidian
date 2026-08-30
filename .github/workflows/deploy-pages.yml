@@ -66,10 +66,11 @@ jobs:
         run: |
           mkdir -p content
           npx quartz create \
-            --template obsidian \
+            --template default \
             --strategy copy \
             --source "$RUNNER_TEMP/aksarans-content" \
             --directory content \
+            --links shortest \
             --baseUrl "$BASE_URL"
 
       - name: Build site
