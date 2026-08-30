@@ -57,7 +57,7 @@ jobs:
           find "$RUNNER_TEMP/aksarans-content/02-Creatures/Characters" \
             -type f -name '*.md' \
             -exec sed -i -E \
-              's!\]\((e[1-3]_(front|back)\.svg)\)!](./\1)!g' {} +
+              's!\!\[([^]]*)\]\((e[1-3]_(front|back)\.svg)\)!<img src="./\2" alt="\1">!g' {} +
 
       - name: Install Quartz
         working-directory: .quartz-engine
