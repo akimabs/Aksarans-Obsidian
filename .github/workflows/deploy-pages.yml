@@ -70,7 +70,7 @@ jobs:
             --strategy copy \
             --source "$RUNNER_TEMP/aksarans-content" \
             --directory content \
-            --links shortest \
+            --links relative \
             --baseUrl "$BASE_URL"
 
       - name: Build site
