@@ -1,0 +1,94 @@
+name: Deploy Aksarans to GitHub Pages
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Aksarans
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out Quartz
+        uses: actions/checkout@v6
+        with:
+          repository: jackyzha0/quartz
+          ref: v5
+          path: .quartz-engine
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: .quartz-engine/package-lock.json
+
+      - name: Prepare published content
+        run: |
+          mkdir -p "$RUNNER_TEMP/aksarans-content"
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.obsidian/' \
+            --exclude='.github/' \
+            --exclude='.quartz-engine/' \
+            --exclude='Templates/' \
+            --exclude='README.md' \
+            "$GITHUB_WORKSPACE/" "$RUNNER_TEMP/aksarans-content/"
+          mv \
+            "$RUNNER_TEMP/aksarans-content/00-Start-Here/Home.md" \
+            "$RUNNER_TEMP/aksarans-content/index.md"
+
+      - name: Install Quartz
+        working-directory: .quartz-engine
+        run: npm ci
+
+      - name: Initialize Quartz for the vault
+        working-directory: .quartz-engine
+        env:
+          BASE_URL: ${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          mkdir -p content
+          npx quartz create \
+            --template obsidian \
+            --strategy copy \
+            --source "$RUNNER_TEMP/aksarans-content" \
+            --directory content \
+            --baseUrl "$BASE_URL"
+
+      - name: Build site
+        working-directory: .quartz-engine
+        run: npx quartz build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .quartz-engine/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
